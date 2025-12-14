@@ -10,7 +10,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif;
     background: radial-gradient(circle at top, #1b1f3b, #0f1224);
     color: white;
     min-height: 100vh;
@@ -47,42 +47,55 @@ body {
     color: white;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #ff6fd8, #ff8c7f);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #32d2aa, #3aa1ff);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #ff5858, #f09819);
-}
+.btn-primary { background: linear-gradient(135deg, #ff6fd8, #ff8c7f); }
+.btn-success { background: linear-gradient(135deg, #32d2aa, #3aa1ff); }
+.btn-danger  { background: linear-gradient(135deg, #ff5858, #f09819); }
 
 .hidden { display: none; }
 
 /* ===== БАШНЯ ===== */
 .tower-wrapper {
-    width: 120px;
-    height: 260px;
+    width: 130px;
+    height: 280px;
     margin: 20px auto;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.35);
     border-radius: 14px;
     overflow: hidden;
+    position: relative;
 }
 
 .tower-fill {
+    position: absolute;
+    bottom: 0;
     width: 100%;
     height: 0%;
     background: linear-gradient(180deg, #ffd56b, #ff8c00);
     transition: height 0.1s;
 }
 
-.percent {
+/* тряска */
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    50% { transform: translateX(1px); }
+    75% { transform: translateX(-1px); }
+    100% { transform: translateX(0); }
+}
+
+.shake-low { animation: shake 0.6s infinite; }
+.shake-mid { animation: shake 0.4s infinite; }
+.shake-high { animation: shake 0.25s infinite; }
+
+.info {
     text-align: center;
-    font-size: 22px;
-    font-weight: bold;
     margin-top: 10px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.status {
+    margin-top: 5px;
+    font-size: 16px;
 }
 
 /* ===== MONETA ===== */
@@ -128,12 +141,10 @@ body {
         <h2>🏗️ Башня</h2>
         <button class="btn btn-primary" onclick="startGame('tower_build')">Играть</button>
     </div>
-
     <div class="game-card">
         <h2>🪙 Монетка</h2>
         <button class="btn btn-success" onclick="startGame('coin_flip')">Играть</button>
     </div>
-
     <div class="game-card">
         <h2>🎲 Кубик</h2>
         <button class="btn btn-danger" onclick="startGame('dice_roll')">Играть</button>
@@ -145,11 +156,14 @@ body {
     <div class="game-card">
         <h2>🏗️ Удерживай кнопку</h2>
 
-        <div class="tower-wrapper">
+        <div id="towerWrap" class="tower-wrapper">
             <div id="towerFill" class="tower-fill"></div>
         </div>
 
-        <div class="percent"><span id="percent">0</span>%</div>
+        <div class="info">
+            <div><span id="percent">0</span>% • x<span id="multiplier">1.0</span></div>
+            <div id="riskStatus" class="status">🟢 Безопасно</div>
+        </div>
 
         <button class="btn btn-primary"
             onmousedown="startBuilding()"
@@ -162,7 +176,7 @@ body {
 </div>
 
 <!-- MONETA -->
-<div id="coinGame" class="hidden">
+    <div id="coinGame" class="hidden">
     <div class="game-card">
         <h2>🪙 Орёл или решка</h2>
         <div class="coin">🪙</div>
@@ -220,11 +234,17 @@ function resetTower() {
     percent = 0;
     finished = false;
     percentEl.textContent = 0;
+    multiplierEl.textContent = '1.0';
+    riskStatus.textContent = '🟢 Безопасно';
     towerFill.style.height = '0%';
+    towerWrap.className = 'tower-wrapper';
 }
 
 const percentEl = document.getElementById('percent');
+const multiplierEl = document.getElementById('multiplier');
+const riskStatus = document.getElementById('riskStatus');
 const towerFill = document.getElementById('towerFill');
+const towerWrap = document.getElementById('towerWrap');
 
 function startBuilding() {
     if (finished) return;
@@ -234,15 +254,31 @@ function startBuilding() {
         percentEl.textContent = percent;
         towerFill.style.height = percent + '%';
 
-        // шанс падения
         let risk = 0;
-        if (percent > 30) risk = percent / 120;
+        let multiplier = 1.0;
 
-        if (Math.random() < risk) {
-            endTower();
+        if (percent < 30) {
+            riskStatus.textContent = '🟢 Безопасно';
+        } else if (percent < 60) {
+            riskStatus.textContent = '🟡 Рискованно';
+            multiplier = 1.5;
+            risk = percent / 150;
+            towerWrap.classList.add('shake-low');
+        } else if (percent < 85) {
+            riskStatus.textContent = '🔴 Опасно';
+            multiplier = 2.0;
+            risk = percent / 100;
+            towerWrap.classList.add('shake-mid');
+        } else {
+            riskStatus.textContent = '💀 Критично';
+            multiplier = 3.0;
+            risk = percent / 70;
+            towerWrap.classList.add('shake-high');
         }
 
-        if (percent >= 100) {
+        multiplierEl.textContent = multiplier.toFixed(1);
+
+        if (Math.random() < risk || percent >= 100) {
             endTower();
         }
     }, 100);
@@ -250,9 +286,7 @@ function startBuilding() {
 
 function stopBuilding() {
     clearInterval(interval);
-    if (!finished && percent > 0) {
-        endTower();
-    }
+    if (!finished && percent > 0) endTower();
 }
 
 function endTower() {
