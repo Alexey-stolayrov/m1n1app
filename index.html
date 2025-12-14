@@ -10,9 +10,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
     background: radial-gradient(circle at top, #1b1f3b, #0f1224);
-    color: #fff;
+    color: white;
     min-height: 100vh;
 }
 
@@ -27,13 +27,6 @@ body {
     margin-bottom: 25px;
 }
 
-.header h1 {
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: 1px;
-}
-
-/* ===== CARD ===== */
 .game-card {
     background: rgba(255,255,255,0.08);
     backdrop-filter: blur(14px);
@@ -43,12 +36,6 @@ body {
     box-shadow: 0 10px 25px rgba(0,0,0,0.35);
 }
 
-.game-card h2 {
-    margin-bottom: 10px;
-    font-size: 20px;
-}
-
-/* ===== BUTTONS ===== */
 .btn {
     width: 100%;
     padding: 14px;
@@ -58,12 +45,6 @@ body {
     font-size: 17px;
     font-weight: 700;
     color: white;
-    cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
-}
-
-.btn:active {
-    transform: scale(0.97);
 }
 
 .btn-primary {
@@ -80,25 +61,31 @@ body {
 
 .hidden { display: none; }
 
-/* ===== БАШНЯ (СТАРАЯ ЛОГИКА) ===== */
-.tower {
-    width: 110px;
-    height: 300px;
-    background: linear-gradient(180deg, #8b4513, #5c3317);
+/* ===== БАШНЯ ===== */
+.tower-wrapper {
+    width: 120px;
+    height: 260px;
     margin: 20px auto;
-    border-radius: 12px;
-    padding-top: 5px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 14px;
+    overflow: hidden;
 }
 
-.floor {
+.tower-fill {
     width: 100%;
-    height: 18px;
-    background: linear-gradient(135deg, #d99058, #b87333);
-    margin: 3px 0;
-    border-radius: 3px;
+    height: 0%;
+    background: linear-gradient(180deg, #ffd56b, #ff8c00);
+    transition: height 0.1s;
 }
 
-/* ===== COIN ===== */
+.percent {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* ===== MONETA ===== */
 .coin {
     width: 130px;
     height: 130px;
@@ -109,14 +96,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 42px;
-    font-weight: bold;
     color: #222;
-    box-shadow: 0 0 25px rgba(255,200,0,0.6);
-    transition: transform .8s;
-}
-
-.coin.flip {
-    transform: rotateY(720deg);
 }
 
 /* ===== DICE ===== */
@@ -127,17 +107,10 @@ body {
     background: white;
     color: black;
     font-size: 42px;
-    font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 20px auto;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-    transition: transform .4s;
-}
-
-.dice.roll {
-    transform: rotate(360deg) scale(1.1);
 }
 </style>
 </head>
@@ -152,7 +125,7 @@ body {
 <!-- MENU -->
 <div id="mainMenu">
     <div class="game-card">
-        <h2>🏗️ Постройка башни</h2>
+        <h2>🏗️ Башня</h2>
         <button class="btn btn-primary" onclick="startGame('tower_build')">Играть</button>
     </div>
 
@@ -170,9 +143,13 @@ body {
 <!-- БАШНЯ -->
 <div id="towerGame" class="hidden">
     <div class="game-card">
-        <h2>🏗️ Строй башню</h2>
-        <div class="tower" id="tower"></div>
-        <p style="text-align:center;">Этажи: <span id="height">0</span></p>
+        <h2>🏗️ Удерживай кнопку</h2>
+
+        <div class="tower-wrapper">
+            <div id="towerFill" class="tower-fill"></div>
+        </div>
+
+        <div class="percent"><span id="percent">0</span>%</div>
 
         <button class="btn btn-primary"
             onmousedown="startBuilding()"
@@ -184,11 +161,11 @@ body {
     </div>
 </div>
 
-<!-- COIN -->
+<!-- MONETA -->
 <div id="coinGame" class="hidden">
     <div class="game-card">
         <h2>🪙 Орёл или решка</h2>
-        <div id="coin" class="coin">🪙</div>
+        <div class="coin">🪙</div>
         <button class="btn btn-success" onclick="flipCoin('heads')">ОРЁЛ</button>
         <button class="btn btn-danger" onclick="flipCoin('tails')">РЕШКА</button>
         <button class="btn" onclick="backToMenu()">Назад</button>
@@ -198,8 +175,8 @@ body {
 <!-- DICE -->
 <div id="diceGame" class="hidden">
     <div class="game-card">
-        <h2>🎲 Угадай число</h2>
-        <div id="dice" class="dice">?</div>
+        <h2>🎲 Кубик</h2>
+        <div class="dice">?</div>
         <button class="btn" onclick="guessDice(1)">1</button>
         <button class="btn" onclick="guessDice(2)">2</button>
         <button class="btn" onclick="guessDice(3)">3</button>
@@ -217,83 +194,95 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 let currentGame = '';
-let towerHeight = 0;
+let percent = 0;
 let interval;
+let finished = false;
 
 /* NAV */
 function startGame(game) {
     currentGame = game;
     mainMenu.classList.add('hidden');
-    if (game === 'tower_build') initTower(), towerGame.classList.remove('hidden');
+    if (game === 'tower_build') resetTower(), towerGame.classList.remove('hidden');
     if (game === 'coin_flip') coinGame.classList.remove('hidden');
     if (game === 'dice_roll') diceGame.classList.remove('hidden');
 }
 
 function backToMenu() {
+    clearInterval(interval);
     towerGame.classList.add('hidden');
     coinGame.classList.add('hidden');
     diceGame.classList.add('hidden');
     mainMenu.classList.remove('hidden');
 }
 
-/* БАШНЯ — СТАРАЯ ЛОГИКА */
-function initTower() {
-    towerHeight = 0;
-    height.textContent = '0';
-    tower.innerHTML = '';
+/* БАШНЯ */
+function resetTower() {
+    percent = 0;
+    finished = false;
+    percentEl.textContent = 0;
+    towerFill.style.height = '0%';
 }
 
+const percentEl = document.getElementById('percent');
+const towerFill = document.getElementById('towerFill');
+
 function startBuilding() {
+    if (finished) return;
+
     interval = setInterval(() => {
-        towerHeight++;
-        height.textContent = towerHeight;
+        percent++;
+        percentEl.textContent = percent;
+        towerFill.style.height = percent + '%';
 
-        const floor = document.createElement('div');
-        floor.className = 'floor';
-        tower.prepend(floor);
+        // шанс падения
+        let risk = 0;
+        if (percent > 30) risk = percent / 120;
 
-        if (towerHeight >= 100) stopBuilding();
+        if (Math.random() < risk) {
+            endTower();
+        }
+
+        if (percent >= 100) {
+            endTower();
+        }
     }, 100);
 }
 
 function stopBuilding() {
     clearInterval(interval);
-    setTimeout(() => {
-        if (towerHeight > 0) {
-            tg.sendData(JSON.stringify({
-                game_type: 'tower_build',
-                bet: 100,
-                score: towerHeight
-            }));
-        }
-    }, 700);
+    if (!finished && percent > 0) {
+        endTower();
+    }
 }
 
-/* COIN */
+function endTower() {
+    if (finished) return;
+    finished = true;
+    clearInterval(interval);
+
+    tg.sendData(JSON.stringify({
+        game_type: 'tower_build',
+        bet: 100,
+        score: percent
+    }));
+}
+
+/* MONETA */
 function flipCoin(choice) {
-    coin.classList.add('flip');
-    setTimeout(() => {
-        coin.classList.remove('flip');
-        tg.sendData(JSON.stringify({
-            game_type: 'coin_flip',
-            bet: 50,
-            choice
-        }));
-    }, 800);
+    tg.sendData(JSON.stringify({
+        game_type: 'coin_flip',
+        bet: 50,
+        choice
+    }));
 }
 
 /* DICE */
 function guessDice(num) {
-    dice.classList.add('roll');
-    setTimeout(() => {
-        dice.textContent = num;
-        dice.classList.remove('roll');
-        tg.sendData(JSON.stringify({
-            game_type: 'dice_roll',
-            bet: 75,
-            guess: num
-        }));
-    }, 500);
+    tg.sendData(JSON.stringify({
+        game_type: 'dice_roll',
+        bet: 75,
+        guess: num
+    }));
 }
 </script>
 </body>
