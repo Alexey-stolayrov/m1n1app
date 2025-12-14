@@ -11,82 +11,73 @@
 body {
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
     min-height: 100vh;
+    color: white;
 }
 .container { max-width: 400px; margin: 0 auto; padding: 20px; }
-.header { text-align: center; margin-bottom: 20px; }
+.header { text-align: center; margin-bottom: 30px; }
+
 .game-card {
-    background: rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.1);
     border-radius: 15px;
     padding: 20px;
     margin: 15px 0;
 }
+
 .btn {
+    display: block;
     width: 100%;
     padding: 15px;
-    margin-top: 10px;
-    border-radius: 12px;
+    margin: 10px 0;
     border: none;
+    border-radius: 10px;
     font-size: 18px;
     font-weight: bold;
 }
+
+.btn-primary { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
 .btn-success { background: linear-gradient(135deg, #4cd964, #5ac8fa); color: white; }
 .btn-danger { background: linear-gradient(135deg, #ff5858, #f09819); color: white; }
-.btn-primary { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+
 .hidden { display: none; }
 
-/* ===== БАШНЯ ===== */
+/* ===== СТАРАЯ БАШНЯ (КАК БЫЛО) ===== */
 .tower {
-    width: 120px;
-    min-height: 300px;
-    background: rgba(0,0,0,0.2);
-    margin: 20px auto;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: center;
+    width: 100px;
+    height: 300px;
+    background: #8B4513;
+    margin: 0 auto;
+    position: relative;
 }
+
 .floor {
-    width: 90%;
-    height: 18px;
-    background: linear-gradient(135deg, #d2691e, #8b4513);
-    border-radius: 4px;
+    width: 100%;
+    height: 20px;
+    background: #D2691E;
     margin: 2px 0;
 }
 
-/* ===== MONETA ===== */
-.coin {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    margin: 20px auto;
-    background: linear-gradient(135deg, gold, orange);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    font-weight: bold;
-    color: black;
-    transition: transform 0.8s;
-}
-.coin.flip { transform: rotateY(720deg); }
-
-/* ===== DICE ===== */
-.dice {
+/* ===== MONETA & DICE (НЕ ТРОНУТЫ) ===== */
+#coin {
     width: 100px;
     height: 100px;
-    border-radius: 20px;
+    background: gold;
+    border-radius: 50%;
+    margin: 20px auto;
+}
+
+#dice {
+    width: 100px;
+    height: 100px;
     background: white;
     color: black;
-    font-size: 40px;
+    border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 40px;
     margin: 20px auto;
-    transition: transform 0.4s;
 }
-.dice.roll { transform: rotate(360deg) scale(1.1); }
 </style>
 </head>
 
@@ -97,30 +88,31 @@ body {
     <h1>🎮 Мини-Игры</h1>
 </div>
 
-<!-- ===== MENU ===== -->
 <div id="mainMenu">
     <div class="game-card">
         <h2>🏗️ Постройка башни</h2>
         <button class="btn btn-primary" onclick="startGame('tower_build')">Играть</button>
     </div>
+
     <div class="game-card">
-        <h2>🪙 Монетка</h2>
+        <h2>🪙 Подбрось монету</h2>
         <button class="btn btn-success" onclick="startGame('coin_flip')">Играть</button>
     </div>
+
     <div class="game-card">
-        <h2>🎲 Кубик</h2>
-        <button class="btn btn-success" onclick="startGame('dice_roll')">Играть</button>
+        <h2>🎲 Бросок кубика</h2>
+        <button class="btn btn-danger" onclick="startGame('dice_roll')">Играть</button>
     </div>
 </div>
 
 <!-- ===== БАШНЯ ===== -->
 <div id="towerGame" class="hidden">
     <div class="game-card">
-        <h2>🏗️ Строй башню</h2>
-        <p>Удерживай кнопку</p>
+        <h2>🏗️ Стройте башню</h2>
+        <p>Нажмите и удерживайте</p>
 
         <div class="tower" id="tower"></div>
-        <p>Этажи: <span id="height">0</span></p>
+        <p>Высота: <span id="height">0</span> этажей</p>
 
         <button class="btn btn-primary"
             onmousedown="startBuilding()"
@@ -135,8 +127,8 @@ body {
 <!-- ===== MONETA ===== -->
 <div id="coinGame" class="hidden">
     <div class="game-card">
-        <h2>🪙 Орёл или решка</h2>
-        <div id="coin" class="coin">🪙</div>
+        <h2>🪙 Орёл или решка?</h2>
+        <div id="coin"></div>
         <button class="btn btn-success" onclick="flipCoin('heads')">ОРЁЛ</button>
         <button class="btn btn-danger" onclick="flipCoin('tails')">РЕШКА</button>
         <button class="btn" onclick="backToMenu()">Назад</button>
@@ -146,18 +138,14 @@ body {
 <!-- ===== DICE ===== -->
 <div id="diceGame" class="hidden">
     <div class="game-card">
-        <h2>🎲 Угадай число</h2>
-        <div id="dice" class="dice">?</div>
-        <div>
-            <button class="btn" onclick="guessDice(1)">1</button>
-            <button class="btn" onclick="guessDice(2)">2</button>
-            <button class="btn" onclick="guessDice(3)">3</button>
-        </div>
-        <div>
-            <button class="btn" onclick="guessDice(4)">4</button>
-            <button class="btn" onclick="guessDice(5)">5</button>
-            <button class="btn" onclick="guessDice(6)">6</button>
-        </div>
+        <h2>🎲 Угадайте число</h2>
+        <div id="dice">?</div>
+        <button class="btn" onclick="guessDice(1)">1</button>
+        <button class="btn" onclick="guessDice(2)">2</button>
+        <button class="btn" onclick="guessDice(3)">3</button>
+        <button class="btn" onclick="guessDice(4)">4</button>
+        <button class="btn" onclick="guessDice(5)">5</button>
+        <button class="btn" onclick="guessDice(6)">6</button>
         <button class="btn" onclick="backToMenu()">Назад</button>
     </div>
 </div>
@@ -169,84 +157,84 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 let currentGame = '';
-let towerHeight = 0;
-let buildInterval;
+    let towerHeight = 0;
+let buildingInterval;
 
 /* ===== NAV ===== */
 function startGame(game) {
     currentGame = game;
-    mainMenu.classList.add("hidden");
-    if (game === 'tower_build') towerGame.classList.remove("hidden");
-    if (game === 'coin_flip') coinGame.classList.remove("hidden");
-    if (game === 'dice_roll') diceGame.classList.remove("hidden");
+    mainMenu.classList.add('hidden');
+    if (game === 'tower_build') {
+        towerGame.classList.remove('hidden');
+        initTower();
+    }
+    if (game === 'coin_flip') coinGame.classList.remove('hidden');
+    if (game === 'dice_roll') diceGame.classList.remove('hidden');
 }
 
 function backToMenu() {
-    towerGame.classList.add("hidden");
-    coinGame.classList.add("hidden");
-    diceGame.classList.add("hidden");
-    mainMenu.classList.remove("hidden");
+    towerGame.classList.add('hidden');
+    coinGame.classList.add('hidden');
+    diceGame.classList.add('hidden');
+    mainMenu.classList.remove('hidden');
 }
 
-/* ===== БАШНЯ ===== */
+/* ===== БАШНЯ (СТАРАЯ ЛОГИКА) ===== */
+function initTower() {
+    towerHeight = 0;
+    height.textContent = '0';
+    tower.innerHTML = '';
+}
+
 function startBuilding() {
-    buildInterval = setInterval(() => {
+    buildingInterval = setInterval(() => {
         towerHeight++;
         height.textContent = towerHeight;
 
-        const floor = document.createElement("div");
-        floor.className = "floor";
-        tower.appendChild(floor);
+        const floor = document.createElement('div');
+        floor.className = 'floor';
+        tower.prepend(floor);
 
-        if (towerHeight >= 100) stopBuilding(true);
+        if (towerHeight > 100) {
+            stopBuilding();
+            finishGame(towerHeight);
+        }
     }, 100);
 }
 
-function stopBuilding(auto=false) {
-    clearInterval(buildInterval);
+function stopBuilding() {
+    clearInterval(buildingInterval);
     setTimeout(() => {
         if (towerHeight > 0) {
-            tg.sendData(JSON.stringify({
-                game_type: "tower_build",
-                bet: 100,
-                score: towerHeight
-            }));
-            resetTower();
+            finishGame(towerHeight);
         }
-    }, auto ? 0 : 800);
+    }, 1000);
 }
 
-function resetTower() {
-    tower.innerHTML = "";
-    towerHeight = 0;
-    height.textContent = "0";
+/* ===== ОТПРАВКА В БОТ ===== */
+function finishGame(score) {
+    tg.sendData(JSON.stringify({
+        game_type: currentGame,
+        bet: currentGame === 'tower_build' ? 100 :
+             currentGame === 'coin_flip' ? 50 : 75,
+        score: score
+    }));
 }
 
-/* ===== MONETA ===== */
 function flipCoin(choice) {
-    coin.classList.add("flip");
-    setTimeout(() => {
-        coin.classList.remove("flip");
-        tg.sendData(JSON.stringify({
-            game_type: "coin_flip",
-            bet: 50,
-            choice: choice
-        }));
-    }, 800);
+    tg.sendData(JSON.stringify({
+        game_type: 'coin_flip',
+        bet: 50,
+        choice: choice
+    }));
 }
 
-/* ===== DICE ===== */
 function guessDice(num) {
-    dice.classList.add("roll");
-    setTimeout(() => {
-        dice.textContent = num;
-        dice.classList.remove("roll");
-        tg.sendData(JSON.stringify({
-            game_type: "dice_roll",
-            bet: 75,
-            guess: num
-        }));
-    }, 500);
+    tg.sendData(JSON.stringify({
+        game_type: 'dice_roll',
+        bet: 75,
+        guess: num
+    }));
 }
 </script>
 
